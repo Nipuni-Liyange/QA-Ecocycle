@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+*.log
+.local-data/
+
+# Private upload artifacts must never enter Git. Production photo bytes are in MongoDB.
+/uploads/
+/server/uploads/
+/client/public/uploads/
