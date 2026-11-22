@@ -79,8 +79,32 @@ export function pickupInput(body) {
 }
 
 export function profileInput(body) {
-  const result = { name: text(body.name, 'name', 2, 80), phone: text(body.phone ?? '', 'phone', 0, 25), district: body.district || '' }
-  if (result.phone && !/^[+\d ()-]{7,25}$/.test(result.phone)) throw new HttpError(422, 'Enter a valid phone number.', { phone: 'Use 7–25 phone number characters.' })
-  if (result.district) choice(result.district, 'district', districts)
+  const result = {
+    name: text(body.name, 'name', 2, 80),
+    phone: text(body.phone ?? '', 'phone', 0, 25),
+    district: body.district || ''
+  }
+
+  if (
+    result.phone &&
+    (
+      !/^[+\d ()-]{7,25}$/.test(result.phone) ||
+      !/\d/.test(result.phone)
+    )
+  ) {
+    throw new HttpError(
+      422,
+      'Enter a valid phone number.',
+      {
+        phone: 'Use 7–25 phone number characters, including at least one digit.'
+      }
+    )
+  }
+
+  if (result.district) {
+    choice(result.district, 'district', districts)
+  }
+
   return result
 }
+ 

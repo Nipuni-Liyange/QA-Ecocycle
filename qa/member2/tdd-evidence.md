@@ -18,7 +18,11 @@ The existing regular expression permits digits, spaces, parentheses,
 plus signs and hyphens, but does not require a digit.
 
 ## Green stage
-Pending.
+- Added a digit requirement for provided phone numbers.
+- Valid formatted numbers remain accepted.
+- Empty and omitted optional phone numbers remain accepted.
+- Regression result: 15 tests, 15 passed, 0 failed.
+- Evidence: evidence/tdd-green.txt
 
 ## Refactor stage
 Pending.
