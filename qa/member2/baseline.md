@@ -21,3 +21,18 @@ Evidence: evidence/baseline-validation.txt
 
 These results cover the existing validation tests only.
 The full integration suite has not yet been verified.
+
+## Added validation tests
+
+- Execution date: 2026-11-22
+- New test file: server/test/qa-validation.test.js
+- Existing tests: 2
+- New tests: 10
+- Total executed: 12
+- Passed: 12
+- Failed: 0
+- Result: PASS
+- Evidence: evidence/member2-validation-tests.txt
+
+These results cover validation tests only.
+The full integration suite remains unverified.
