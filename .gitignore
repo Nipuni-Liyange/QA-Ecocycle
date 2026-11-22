@@ -10,3 +10,5 @@ dist/
 /uploads/
 /server/uploads/
 /client/public/uploads/
+server/coverage/
+server/.nyc_output/
