@@ -55,3 +55,24 @@ The measured file-level coverage remains:
 - Branches: 73.52%
 - Functions: 70%
 - Lines: 80.23%
+
+## Coverage after phone-validation TDD
+
+Scope: server/src/validation.js only.
+
+| Metric | Before TDD | After TDD |
+|---|---:|---:|
+| Statements | 80.23% | 91.66% |
+| Branches | 73.52% | 77.27% |
+| Functions | 70% | 90% |
+| Lines | 80.23% | 91.66% |
+
+Test result: 15 tests passed, 0 failed.
+
+Uncovered lines: 22–25, 63, 69–72.
+
+The later run includes the three phone-validation tests.
+The source was also changed and refactored during TDD.
+These figures do not represent whole-application coverage.
+
+Evidence: evidence/member2-coverage-after-tdd.txt
