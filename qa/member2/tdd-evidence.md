@@ -25,4 +25,8 @@ plus signs and hyphens, but does not require a digit.
 - Evidence: evidence/tdd-green.txt
 
 ## Refactor stage
-Pending.
+- Named the phone checks hasValidFormat and containsDigit.
+- Made optional-phone handling explicit with an outer condition.
+- Preserved the validation rules and error response.
+- Regression result: 15 tests, 15 passed, 0 failed.
+- Evidence: evidence/tdd-refactor.txt

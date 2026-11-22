@@ -85,20 +85,19 @@ export function profileInput(body) {
     district: body.district || ''
   }
 
-  if (
-    result.phone &&
-    (
-      !/^[+\d ()-]{7,25}$/.test(result.phone) ||
-      !/\d/.test(result.phone)
-    )
-  ) {
-    throw new HttpError(
-      422,
-      'Enter a valid phone number.',
-      {
-        phone: 'Use 7–25 phone number characters, including at least one digit.'
-      }
-    )
+  if (result.phone) {
+    const hasValidFormat = /^[+\d ()-]{7,25}$/.test(result.phone)
+    const containsDigit = /\d/.test(result.phone)
+
+    if (!hasValidFormat || !containsDigit) {
+      throw new HttpError(
+        422,
+        'Enter a valid phone number.',
+        {
+          phone: 'Use 7–25 phone number characters, including at least one digit.'
+        }
+      )
+    }
   }
 
   if (result.district) {
@@ -107,4 +106,3 @@ export function profileInput(body) {
 
   return result
 }
- 
