@@ -1,0 +1,29 @@
+﻿========================================
+EC4206 - ECOCYCLE SELENIUM AUTOMATION
+Test ID   : M3-UI03
+Test Name : Create Pickup - Verify Pending Status
+========================================
+> automation@1.0.0 ui
+> node scripts/isolated-runner.mjs ui
+(node:13744) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+> client@0.0.0 dev
+> vite --host 127.0.0.1 --strictPort
+  VITE v8.3.4  ready in 274 ms
+
+  Γ₧£  Local:   http://127.0.0.1:4000/
+  Γ₧£  press h + enter to show help
+MongoDB connected successfully
+EcoCycle API listening on port 5000
+Temporary MongoDB and both app servers are ready. Executing tests.
+> automation@1.0.0 ui:raw
+> node tests/ui.mjs
+PASS M3-UI03: User creates pending pickup and it persists after refresh
+M3 Selenium result: 1 passed, 0 failed
+Isolated test environment shut down; temporary records discarded.
+----------------------------------------
+Test ID   : M3-UI03
+Test Name : Create Pickup - Verify Pending Status
+Result    : PASS
+Exit Code : 0
+----------------------------------------

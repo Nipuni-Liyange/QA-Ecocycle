@@ -1,0 +1,22 @@
+{
+  "name": "automation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "smoke": "node smoke.mjs",
+    "ui:raw": "node tests/ui.mjs",
+    "bdd:raw": "cucumber-js --import features/step_definitions/*.mjs features/pickups.feature",
+    "ui": "node scripts/isolated-runner.mjs ui",
+    "bdd": "node scripts/isolated-runner.mjs bdd"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@cucumber/cucumber": "^13.3.0",
+    "selenium-webdriver": "^4.51.0"
+  }
+}
