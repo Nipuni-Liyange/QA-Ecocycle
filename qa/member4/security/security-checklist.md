@@ -1,7 +1,7 @@
 # EcoCycle – Security Testing Checklist
 
 **Project:** EcoCycle  
-**QA Responsibility:** Member 4 – Performance, Security, Usability and Defect Tracking  
+**QA Responsibility: Performance, Security, Usability and Defect Tracking  
 **Environment:** Local development environment  
 **Backend:** Express.js  
 **Database:** MongoDB Atlas  
