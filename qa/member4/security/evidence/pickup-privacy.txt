@@ -1,0 +1,5 @@
+Test: Pickup information privacy for unassigned collector
+Endpoint: GET /api/pickups/6b0446d48f6ff34f4c9db880
+Expected result: Collector can view pickup item information but cannot view customer name, email, phone or exact address.
+Actual result: HTTP 200. Item information and district/city were visible. Customer name, email, phone and exact address were not included. Collector was null.
+Status: PASS

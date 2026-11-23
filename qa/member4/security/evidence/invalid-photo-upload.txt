@@ -1,0 +1,7 @@
+Test: Invalid photo upload validation
+Endpoint: POST /api/pickups
+Test input: data:text/plain;base64,dGVzdA==
+Expected result: 422 Unprocessable Entity
+Actual result: 422 Unprocessable Entity
+Response: Use a JPEG, PNG or WebP image.
+Status: PASS

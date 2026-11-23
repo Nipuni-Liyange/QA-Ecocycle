@@ -1,0 +1,7 @@
+Test: Negative pickup quantity validation
+Endpoint: POST /api/pickups
+Test input: {"quantity":-5}
+Expected result: 422 Unprocessable Entity
+Actual result: 422 Unprocessable Entity
+Response: Quantity must be a whole number from 1 to 999.
+Status: PASS

@@ -1,0 +1,6 @@
+Test: Protected endpoint after logout
+Endpoint: GET /api/auth/me
+Expected result: 401 Unauthorized
+Actual result: 401 Unauthorized
+Response: Please log in to continue.
+Status: PASS
