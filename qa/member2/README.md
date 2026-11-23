@@ -1,99 +1,108 @@
-# White-box testing and code quality
+# Validation tests and quality analysis
 
-Contribution scope: white-box analysis, validation unit tests, one TDD cycle,
-coverage measurement, and SonarQube findings. Branch: `qa/whitebox-quality`.
+This guide is for anyone reproducing the validation tests and quality analysis.
+All workflows start at the **repository root**, the folder containing `client`,
+`server`, and `qa`. Paths are relative to that folder.
 
-## Start here
+## Documentation
 
 | Item | File |
 |---|---|
-| White-box explanation | [whitebox-analysis.md](whitebox-analysis.md) |
-| Two explicit control-flow graphs | [control-flow-graphs.md](control-flow-graphs.md) |
+| White-box analysis | [whitebox-analysis.md](whitebox-analysis.md) |
+| Annotated control-flow graphs | [control-flow-graphs.md](control-flow-graphs.md) |
 | Baseline | [baseline.md](baseline.md) |
 | Coverage comparison | [coverage-summary.md](coverage-summary.md) |
-| TDD history | [tdd-evidence.md](tdd-evidence.md) |
+| TDD evidence | [tdd-evidence.md](tdd-evidence.md) |
 | SonarQube findings and proposals | [sonarqube-analysis.md](sonarqube-analysis.md) |
-| Results, reflection, and defect handoff | [final-handoff.md](final-handoff.md) |
-| Pull-request description | [pull-request.md](pull-request.md) |
+| Handoff and reflection | [final-handoff.md](final-handoff.md) |
 
-## Reproduce the selected unit tests
+## Run the selected validation tests
 
-Use PowerShell with the project's installed dependencies. The recorded environment
-used Node.js 20.20.0 and npm 10.8.2. Adapt the drive path for another machine.
+Use the checked-out source and the project's installed dependencies. From the
+repository root, run:
 
-```powershell
-cd "D:\QA-Ecocycle\EcoCycle-main\server"
-node --test test/validation.test.js test/qa-validation.test.js test/qa-profile-tdd.test.js
+```sh
+node --test server/test/validation.test.js server/test/qa-validation.test.js server/test/qa-profile-tdd.test.js
 ```
 
-Recorded result: **15 tests passed, 0 failed**. There are 2 existing baseline tests,
-10 new white-box tests, and 3 new profile TDD tests. This command is the selected
-validation suite, not a claim that every application test has passed.
+The recorded run used Node.js 20.20.0 and npm 10.8.2 and reported **15 passed,
+0 failed**: 2 existing tests, 10 white-box tests, and 3 profile TDD tests.
+This is the selected validation suite. The transcript is
+[sonarqube-test-run.txt](evidence/sonarqube-test-run.txt).
 
-Evidence: [sonarqube-test-run.txt](evidence/sonarqube-test-run.txt).
-The historical baseline transcript is [baseline-validation.txt](evidence/baseline-validation.txt).
+## Generate module coverage
 
-## Reproduce module coverage
+The coverage command runs inside `server`, then returns to the repository root:
 
-From `server`, run:
-
-```powershell
+```sh
+cd server
 npx c8 --all --include="src/validation.js" --reporter=text --reporter=html --reporter=lcov node --test test/validation.test.js test/qa-validation.test.js test/qa-profile-tdd.test.js
+cd ..
 ```
 
-Outputs: `server/coverage/index.html` and `server/coverage/lcov.info`.
-Recorded module coverage: statements/lines **91.66%**, branches **77.27%**,
-functions **90%**. The coverage scope is only `server/src/validation.js`.
+Outputs are `server/coverage/index.html` and `server/coverage/lcov.info`.
+The recorded validation.js-only coverage is 91.66% statements/lines, 77.27%
+branches, and 90% functions. Revision-specific interpretation and limitations are
+in [coverage-summary.md](coverage-summary.md).
 
-## Reproduce the SonarQube analysis
+## Run SonarQube analysis
 
-The recorded SonarQube project key is `qa-ecocycle`, running locally at
-`http://127.0.0.1:9000`. Start the existing container if necessary:
+Run the selected tests and coverage generation first. Start the existing local
+SonarQube container if needed:
 
-```powershell
+```sh
 docker start ecocycle-sonarqube
 ```
 
-Wait until SonarQube is operational. Run the coverage command above first, then
-prepare repository-relative coverage paths from the repository root:
+Wait until the service is operational. Install SonarScanner CLI and make its
+`bin` directory available through the current machine's PATH.
+Confirm the command is available:
+
+```sh
+sonar-scanner --version
+```
+
+The checked-in `sonar-project.properties` identifies the source directories,
+tests, project key `qa-ecocycle`, and LCOV report path.
+For PowerShell, prepare repository-relative coverage paths from the repository root:
 
 ```powershell
-cd "D:\QA-Ecocycle\EcoCycle-main"
 Get-Content ".\server\coverage\lcov.info" | ForEach-Object {
     $_ -replace '^SF:src[\\/]', 'SF:server/src/'
 } | Set-Content -Encoding ASCII ".\server\coverage\lcov-sonar.info"
 ```
 
-Set the token privately; enter the generated token value at the prompt:
+Set the current operator's analysis token privately. The next commands use PowerShell:
 
 ```powershell
 $qaToken = Read-Host "SonarQube analysis token" -AsSecureString
 $env:SONAR_TOKEN = [System.Net.NetworkCredential]::new('', $qaToken).Password
-$env:SONAR_USER_HOME = "D:\QA-Ecocycle\sonar-cache"
 ```
 
-Run the installed scanner from the repository root, using its actual path:
+Run the scanner from the repository root:
 
 ```powershell
-& "D:\QA-Ecocycle\tools\sonar-scanner-8.4.0.16527-windows-x64\bin\sonar-scanner.bat"
-$qaScanExit = $LASTEXITCODE
-Remove-Item Env:\SONAR_TOKEN -ErrorAction SilentlyContinue
+try {
+    sonar-scanner
+    $qaScanExit = $LASTEXITCODE
+} finally {
+    Remove-Item Env:\SONAR_TOKEN -ErrorAction SilentlyContinue
+}
 "Scanner exit code: $qaScanExit"
 ```
 
-The recorded run returned `ANALYSIS SUCCESSFUL`, `EXECUTION SUCCESS`, and exit 0.
-That confirms submission of the analysis; quality-gate status is a separate result.
-Keep future scan results tied to their actual source revision.
+The recorded analysis of revision `a63ed6f` used SonarScanner CLI 8.4.0.16527
+and SonarQube Community Build 26.11.0.134175. It returned `ANALYSIS SUCCESSFUL`,
+`EXECUTION SUCCESS`, and exit 0. Quality-gate status is a separate result.
+The wider source scan reported 16.9% overall coverage; see
+[sonarqube-analysis.md](sonarqube-analysis.md) for its scope and findings.
 
-## Evidence and limits
+## Evidence and validation scope
 
-- SonarQube baseline source revision: `a63ed6f`.
-- Recorded scanner: 8.4.0.16527; SonarQube Community Build: 26.11.0.134175, MQR mode.
-- The broader source scan covers `client/src` and `server/src`; overall coverage is 16.9%.
-- The selected suite has successful local execution evidence. A successful full
-  database-backed integration run, frontend lint/build, and shared CI are not
-  established by these selected-suite results.
-- MongoDB binary download interrupted the earlier environment setup. Keep this
-  historical blocker separate from the successful pure validation runs.
-- Defect-log totals, issue IDs, review, and integration status are tracked in the
-  [final handoff](final-handoff.md).
+- Reproduce commands from the repository root or the explicitly stated subfolder.
+- Use the environment configuration, tool installation, and authorized test data
+  appropriate to the current machine.
+- The selected validation suite and scan have recorded execution evidence.
+- A successful full integration run, frontend lint/build, and shared CI are not
+  established by the selected-suite transcript alone.
+- The final handoff identifies the remaining shared defect-log and review items.
