@@ -1,0 +1,29 @@
+EcoCycle - Member 3 BDD Test Evidence
+====================================
+Test ID        : M3-BDD04
+Scenario       : Pickup without an item name is rejected
+Executed at    : 2026-11-23 12:09:49
+Test framework : Cucumber + Selenium (Firefox)
+Environment    : Isolated temporary MongoDB and local app servers
+
+BDD STEPS
+---------
+  Given a newly registered General User is on the pickup form
+  When the user submits a pickup without an item name
+  Then the request is blocked by required-field validation
+
+ACTUAL EXECUTION RESULTS
+------------------------
+Scenarios      : 1 scenario (1 passed)
+Steps          : 5 steps (5 passed)
+Duration       : 0m 6.161s
+Process exit   : 0
+Screenshot     : artifacts\M3-BDD04-PASS.png (captured during this run)
+
+FINAL RESULT   : PASS
+
+AUDIT TRAIL
+-----------
+Full original console output: M3-BDD04-raw.txt
+Screenshot assertions are performed by the executable step definitions.
+This report summarizes real output; it does not add unverified observations.

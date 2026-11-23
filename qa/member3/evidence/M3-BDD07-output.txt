@@ -1,0 +1,29 @@
+EcoCycle - Member 3 BDD Test Evidence
+====================================
+Test ID        : M3-BDD07
+Scenario       : General User cannot access collector dashboard
+Executed at    : 2026-11-23 12:11:53
+Test framework : Cucumber + Selenium (Firefox)
+Environment    : Isolated temporary MongoDB and local app servers
+
+BDD STEPS
+---------
+  Given a newly registered General User is signed in
+  When the General User opens the collector dashboard
+  Then the General User remains in the user dashboard
+
+ACTUAL EXECUTION RESULTS
+------------------------
+Scenarios      : 1 scenario (1 passed)
+Steps          : 5 steps (5 passed)
+Duration       : 0m 5.286s
+Process exit   : 0
+Screenshot     : artifacts\M3-BDD07-PASS.png (captured during this run)
+
+FINAL RESULT   : PASS
+
+AUDIT TRAIL
+-----------
+Full original console output: M3-BDD07-raw.txt
+Screenshot assertions are performed by the executable step definitions.
+This report summarizes real output; it does not add unverified observations.

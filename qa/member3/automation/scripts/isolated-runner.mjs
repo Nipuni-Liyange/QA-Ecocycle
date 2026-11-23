@@ -53,7 +53,12 @@ function runTests() {
   const script = mode === 'ui' ? 'ui:raw' : 'bdd:raw';
   const command = isWin ? 'npm.cmd' : 'npm';
   return new Promise((resolve, reject) => {
-    const child = spawn(command, ['run', script], {
+    const tag = process.argv[3];
+    if (tag && (mode !== 'bdd' || !/^@M3-BDD0[1-8]$/.test(tag))) {
+      throw new Error('Use a scenario tag such as @M3-BDD01');
+    }
+    const args = ['run', script, ...(tag ? ['--', '--tags', tag] : [])];
+    const child = spawn(command, args, {
       cwd: automationDir,
       env: { ...process.env, M3_TEST_MODE: 'isolated', M3_BASE_URL: 'http://127.0.0.1:4000' },
       stdio: 'inherit',

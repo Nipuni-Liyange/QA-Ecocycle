@@ -1,0 +1,30 @@
+EcoCycle - Member 3 BDD Test Evidence
+====================================
+Test ID        : M3-BDD05
+Scenario       : Recycling Collector accepts an available pickup
+Executed at    : 2026-11-23 12:10:56
+Test framework : Cucumber + Selenium (Firefox)
+Environment    : Isolated temporary MongoDB and local app servers
+
+BDD STEPS
+---------
+  Given a pending pickup exists from a newly registered General User
+  And a newly registered Recycling Collector is signed in
+  When the collector accepts that pickup
+  Then the pickup is displayed with status "accepted"
+
+ACTUAL EXECUTION RESULTS
+------------------------
+Scenarios      : 1 scenario (1 passed)
+Steps          : 6 steps (6 passed)
+Duration       : 0m 8.110s
+Process exit   : 0
+Screenshot     : artifacts\M3-BDD05-PASS.png (captured during this run)
+
+FINAL RESULT   : PASS
+
+AUDIT TRAIL
+-----------
+Full original console output: M3-BDD05-raw.txt
+Screenshot assertions are performed by the executable step definitions.
+This report summarizes real output; it does not add unverified observations.
