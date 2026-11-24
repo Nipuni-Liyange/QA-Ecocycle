@@ -1,51 +1,95 @@
 # EcoCycle
 
-E-waste collection and recycling coordination, built in the existing React/Vite + Express/Mongoose project.
+EcoCycle is an e-waste collection and recycling coordination web application,
+using React/Vite, Express, Mongoose, and MongoDB.
 
-## Run the app with your existing Atlas accounts
+## Prerequisites
 
-Use the existing Atlas connection in the private `server/.env` file for your registered accounts and pickup requests. Open two PowerShell terminals:
+- Git, Node.js, and npm compatible with the project dependencies.
+- An authorized development or test MongoDB connection for Atlas mode.
+- A MongoDB Community executable for the optional local-database mode.
 
-```powershell
-cd E:\ecocycle\EcoCycle\server
-npm run dev
+The recorded QA environment used Node.js 20.20.0 and npm 10.8.2.
+
+## Get the project
+
+```sh
+git clone https://github.com/Nipuni-Liyange/QA-Ecocycle.git
+cd QA-Ecocycle
 ```
 
-```powershell
-cd E:\ecocycle\EcoCycle\client
-npm run dev
+An existing checkout can be used directly. Start the commands below from the
+**repository root**, the folder containing `client` and `server`. The repository
+can be stored on any drive or in any parent folder.
+
+## Install dependencies
+
+```sh
+npm --prefix server ci
+npm --prefix client ci
 ```
 
-Open [EcoCycle](http://127.0.0.1:4000). The Vite configuration uses port 4000; if `npm run dev` reports that the port is in use, the frontend may already be running, so open this URL instead of starting another copy. Register a General User to create pickups, or a Recycling Collector to accept and schedule them. There are no seeded accounts.
+## Configure the database
 
-Wait for `MongoDB connected successfully` and `EcoCycle API listening on port 5000` in the backend terminal. Log in with the registered **email address**, password and matching account type. Run only one backend on port 5000 and one frontend on port 4000. A fresh checkout needs `npm ci` in both folders and Node 20.19+.
+For a fresh setup, create `server/.env` using `server/.env.example` as the template.
+Configure `MONGODB_URI`, `PORT`, and `CLIENT_ORIGIN` for the selected environment.
+Keep credentials in the private environment file; it is ignored by Git.
 
-If you previously started `npm run dev:local`, stop that backend with Ctrl+C before running `npm run dev` in `server`. Local mode uses a separate database, so its accounts and passwords can differ even when an email address is the same. Do not create a replacement account to recover an existing Atlas account.
+For an existing setup, use the environment configuration agreed by the team.
+Atlas and local mode use separate databases, accounts, and pickup records.
 
-## Diagnose an Atlas connection problem
+## Run the application
 
-```powershell
-cd E:\ecocycle\EcoCycle\server
-npm run db:check
-npm run dev
+Open two terminals, each starting at the repository root.
+
+Backend terminal:
+
+```sh
+npm --prefix server run dev
 ```
 
-The original `MONGODB_URI` and `PORT` settings remain supported. The earlier password-template issue was corrected and a connection was verified at that time. A later failure was traced to a TLS handshake rejection before authentication; it does not establish that the password is incorrect. `npm run db:check` inspects nested driver errors and reports a diagnosis without printing credentials or changing records. System DNS also failed on this computer; the project resolvers resolved the cluster but encountered the TLS rejection.
+Frontend terminal:
 
-For `ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR`, first check the correct Atlas project's **Security → Network Access → IP Access List**. If your current public IP is missing, select **Add IP Address → Add Current IP Address**, confirm the entry and wait until it is **Active**. An internet reconnect, VPN change or expired temporary entry can change access. If the current IP is already allowed, check cluster availability and VPN/firewall/TLS-inspection settings. The TLS error alone does not identify which of these caused the rejection. See [MongoDB's connection troubleshooting](https://www.mongodb.com/docs/atlas/troubleshoot-connection/).
-
-Run `npm run db:check` again after the setting is corrected. If nodemon is waiting after a correction, type `rs` and press Enter, or stop it with Ctrl+C and run `npm run dev` again. For development without Atlas, `npm run dev:local` remains a separate persistent local database option; existing Atlas records are not copied into it.
-
-## Optional separate local database
-
-Use this only when you intentionally want local development accounts instead of your Atlas accounts. MongoDB Community 8.0 is installed on this computer:
-
-```powershell
-cd E:\ecocycle\EcoCycle\server
-npm run dev:local
+```sh
+npm --prefix client run dev
 ```
 
-This starts a separate MongoDB on loopback port 27018 and stores records under ignored `server/.local-data/mongodb`. Data survives API/database restarts. It does not read or modify the private Atlas `.env`, and it does not copy or synchronize Atlas accounts or pickups. Stop the backend with Ctrl+C before switching database modes.
+Wait for the backend to report a successful MongoDB connection and startup.
+The default API address is `http://127.0.0.1:5000` and the frontend is
+[EcoCycle](http://127.0.0.1:4000). Use the actual configured port if overridden.
+
+Register a General User to create pickups or a Recycling Collector to accept and
+schedule them. Log in using the registered email, password, and matching role.
+The application has no seeded accounts.
+
+## Diagnose a database connection
+
+```sh
+npm --prefix server run db:check
+```
+
+The diagnostic reports connection errors without printing credentials or changing
+database records. Check the configured connection string, Atlas network access,
+cluster availability, DNS, and relevant firewall or TLS settings. A TLS handshake
+failure alone does not establish that a database password is incorrect.
+
+See [MongoDB connection troubleshooting](https://www.mongodb.com/docs/atlas/troubleshoot-connection/).
+After correcting configuration, restart the backend or use nodemon's `rs` command.
+
+## Optional local database
+
+Install MongoDB Community before using local mode. If needed, configure
+`MONGOD_BINARY` for the executable installed on the current machine.
+
+From the repository root:
+
+```sh
+npm --prefix server run dev:local
+```
+
+This starts a separate MongoDB on loopback port 27018, with persistent data under
+the ignored `server/.local-data/mongodb` directory. It does not copy Atlas records.
+Stop the active backend with Ctrl+C before switching database modes.
 
 ## Features
 
@@ -60,20 +104,28 @@ This starts a separate MongoDB on loopback port 27018 and stores records under i
 
 ## Checks
 
-```powershell
-cd E:\ecocycle\EcoCycle\server
-npm test
-cd E:\ecocycle\EcoCycle\client
-npm run lint
-npm run build
+Run from the repository root:
+
+```sh
+npm --prefix server test
+npm --prefix client run lint
+npm --prefix client run build
 ```
 
-Backend tests start an isolated real MongoDB instance, use disposable synthetic data and never connect to Atlas. Tests prefer the installed MongoDB binary; if absent, mongodb-memory-server downloads a test binary. Set `MONGOD_BINARY` for a custom installed executable.
+The backend integration tests use an isolated MongoDB instance and synthetic data.
+They may need an installed MongoDB executable or a downloaded test binary.
+Configure `MONGOD_BINARY` when using a custom installation.
+Record actual execution results; the commands above are reproducibility instructions.
 
-See [photo upload implementation](docs/photo-uploads.md) for storage, access rules, API examples, verification results and the exact changed-file list. Sharp safely decodes and re-encodes uploads; Multer is unnecessary because the existing JSON request flow is retained.
+## QA documentation
 
-## Design reference and documentation
+The validation-test instructions and analysis evidence are in
+[the QA run guide](qa/member2/README.md).
+See [the final handoff](qa/member2/final-handoff.md) for recorded results and shared follow-up.
 
-The supplied Figma URL requires sign-in in the available browser, and no exported screens were attached. Exact visual matching remains unverified. The implementation follows the written brief and extends the existing visual identity. All original photos and logo assets are preserved.
+## Application documentation
 
-See [application handoff](docs/application.md) for API routes, security behavior, database troubleshooting and deployment settings. [Phase A](docs/phase-a.md) is historical and superseded by the current implementation; no administrator role is included. Existing public About, Services and Contact guidance pages remain available. Collection steps are summarized on the homepage.
+- [Application behavior, API, and deployment settings](docs/application.md)
+- [Photo upload implementation](docs/photo-uploads.md)
+- [Pickup tracking](docs/pickup-tracking.md)
+- [Historical Phase A notes](docs/phase-a.md)
