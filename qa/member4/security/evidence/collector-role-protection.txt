@@ -1,0 +1,7 @@
+Test: Collector role modification protection
+Endpoint: PATCH /api/auth/profile
+Test input: {"role":"user"}
+Expected result: 422 Unprocessable Entity
+Actual result: 422 Unprocessable Entity
+Response: Only your name, phone and district can be updated here.
+Status: PASS

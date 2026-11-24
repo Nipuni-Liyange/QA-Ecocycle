@@ -1,0 +1,6 @@
+Test: Unauthenticated access to protected endpoint
+Endpoint: GET /api/auth/me
+Expected result: 401 Unauthorized
+Actual result: 401 Unauthorized
+Response: {"message":"Please log in to continue."}
+Status: PASS

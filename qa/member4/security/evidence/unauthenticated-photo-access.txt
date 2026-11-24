@@ -1,0 +1,6 @@
+Test: Unauthenticated access to pickup photo
+Endpoint: GET /api/pickups/6b0446d48f6ff34f4c9db880/photos/6b0446d48f6ff34f4c9db87f
+Expected result: 401 Unauthorized
+Actual result: 401 Unauthorized
+Response content type: application/json
+Status: PASS
