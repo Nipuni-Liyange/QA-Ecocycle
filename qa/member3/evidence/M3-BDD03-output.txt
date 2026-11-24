@@ -1,0 +1,29 @@
+EcoCycle - Member 3 BDD Test Evidence
+====================================
+Test ID        : M3-BDD03
+Scenario       : General User creates a valid pickup
+Executed at    : 2026-11-23 12:08:55
+Test framework : Cucumber + Selenium (Firefox)
+Environment    : Isolated temporary MongoDB and local app servers
+
+BDD STEPS
+---------
+  Given a newly registered General User is signed in
+  When the user submits a valid pickup request
+  Then the pickup is displayed with status "pending" after refresh
+
+ACTUAL EXECUTION RESULTS
+------------------------
+Scenarios      : 1 scenario (1 passed)
+Steps          : 5 steps (5 passed)
+Duration       : 0m 7.479s
+Process exit   : 0
+Screenshot     : artifacts\M3-BDD03-PASS.png (captured during this run)
+
+FINAL RESULT   : PASS
+
+AUDIT TRAIL
+-----------
+Full original console output: M3-BDD03-raw.txt
+Screenshot assertions are performed by the executable step definitions.
+This report summarizes real output; it does not add unverified observations.

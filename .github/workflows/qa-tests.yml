@@ -1,0 +1,91 @@
+
+name: EcoCycle QA - Member 3 CI
+
+on:
+  push:
+    branches: [main, 'qa/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: Automated QA Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+
+    env:
+      CI: 'true'
+      MOZ_HEADLESS: '1'
+      MONGOMS_VERSION: '8.2.6'
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: server
+
+      - name: Run backend tests
+        run: npm test
+        working-directory: server
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: client
+
+      - name: Run frontend lint
+        run: npm run lint
+        working-directory: client
+
+      - name: Build production frontend
+        run: npm run build
+        working-directory: client
+
+      - name: Install automation dependencies
+        run: npm ci
+        working-directory: qa/member3/automation
+
+      - name: Verify Firefox and Geckodriver
+        run: |
+          firefox --version
+          geckodriver --version
+
+      - name: Prepare CI evidence directory
+        run: |
+          mkdir -p qa/member3/evidence/artifacts
+          find qa/member3/evidence/artifacts \
+            -maxdepth 1 -type f -name '*.png' -delete
+
+      - name: Run Selenium UI tests
+        run: |
+          set -o pipefail
+          npm run ui --prefix qa/member3/automation \
+            2>&1 | tee qa/member3/evidence/ci-ui.log
+
+      - name: Run Cucumber BDD tests
+        run: |
+          set -o pipefail
+          npm run bdd --prefix qa/member3/automation \
+            2>&1 | tee qa/member3/evidence/ci-bdd.log
+
+      - name: Upload CI test evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ecocycle-member3-ci-evidence
+          path: |
+            qa/member3/evidence/ci-ui.log
+            qa/member3/evidence/ci-bdd.log
+            qa/member3/evidence/artifacts/*.png
+          if-no-files-found: warn
+          retention-days: 14
