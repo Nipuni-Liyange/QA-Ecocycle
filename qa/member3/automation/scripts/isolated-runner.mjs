@@ -1,9 +1,12 @@
 
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import net from 'node:net';
+import { tmpdir } from 'node:os';
 
 const automationDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -13,25 +16,113 @@ const automationDir = path.resolve(
 const root = path.resolve(automationDir, '..', '..', '..');
 const serverDir = path.join(root, 'server');
 const clientDir = path.join(root, 'client');
+const postmanDir = path.join(root, 'qa', 'member1', 'postman');
+const collectionPath = path.join(
+  postmanDir,
+  'EcoCycle-Functional.postman_collection.json'
+);
+const reportPath = path.join(
+  tmpdir(),
+  `ecocycle-ci-newman-${randomUUID()}.json`
+);
+const newmanBaseUrl = 'http://127.0.0.1:5000';
 
 const requireServer = createRequire(
   pathToFileURL(path.join(serverDir, 'package.json'))
+);
+const requirePostman = createRequire(
+  pathToFileURL(path.join(postmanDir, 'package.json'))
 );
 
 const { MongoMemoryServer } = requireServer('mongodb-memory-server');
 
 const mode = process.argv[2] || 'ui';
 
-if (!['ui', 'bdd'].includes(mode)) {
-  throw new Error('Use: node scripts/isolated-runner.mjs ui|bdd');
+if (!['ui', 'bdd', 'newman'].includes(mode)) {
+  throw new Error('Use: node scripts/isolated-runner.mjs ui|bdd|newman');
 }
 
 let mongo;
 let backend;
 let frontend;
+let newmanCollection;
 let interrupted = false;
 
 const isWin = process.platform === 'win32';
+
+// Pin every collection request to the isolated local backend.
+function prepareNewmanCollection() {
+  const collection = JSON.parse(
+    readFileSync(collectionPath, 'utf8')
+  );
+  const baseUrl = Array.isArray(collection.variable)
+    ? collection.variable.find((variable) => variable.key === 'baseUrl')
+    : null;
+
+  if (!baseUrl) {
+    throw new Error('Newman collection is missing its baseUrl variable');
+  }
+
+  baseUrl.value = newmanBaseUrl;
+
+  function inspectCollection(value) {
+    if (Array.isArray(value)) {
+      value.forEach(inspectCollection);
+      return;
+    }
+
+    if (!value || typeof value !== 'object') return;
+
+    if (value.request) {
+      const requestUrl = value.request.url;
+      const rawUrl =
+        typeof requestUrl === 'string' ? requestUrl : requestUrl?.raw;
+
+      if (
+        typeof rawUrl !== 'string' ||
+        !rawUrl.startsWith('{{baseUrl}}/')
+      ) {
+        throw new Error(
+          'Newman collection contains a request outside the local baseUrl'
+        );
+      }
+
+      const resolvedUrl = new URL(
+        rawUrl.replace('{{baseUrl}}', newmanBaseUrl)
+      );
+
+      if (resolvedUrl.origin !== newmanBaseUrl) {
+        throw new Error(
+          'Newman collection contains a request outside the local baseUrl'
+        );
+      }
+
+      value.request.url = rawUrl.replace(
+        '{{baseUrl}}',
+        newmanBaseUrl
+      );
+    }
+
+    if (value.script && Array.isArray(value.script.exec)) {
+      const script = value.script.exec.join('\n');
+
+      if (
+        /\bbaseUrl\b|\bpm\.request\.url\b|\bpm\.sendRequest\b|\bpm\.execution\.runRequest\b|\bfetch\s*\(|\bXMLHttpRequest\b/i.test(
+          script
+        )
+      ) {
+        throw new Error(
+          'Newman collection scripts must not override request URLs or send independent network requests'
+        );
+      }
+    }
+
+    Object.values(value).forEach(inspectCollection);
+  }
+
+  inspectCollection(collection);
+  return collection;
+}
 
 // Start an application service.
 function spawnService(command, args, cwd, env) {
@@ -58,8 +149,8 @@ async function waitForHealth() {
     if (
       backend.exitCode !== null ||
       backend.signalCode !== null ||
-      frontend.exitCode !== null ||
-      frontend.signalCode !== null
+      (frontend &&
+        (frontend.exitCode !== null || frontend.signalCode !== null))
     ) {
       throw new Error(
         'One of the app servers exited before becoming ready'
@@ -151,6 +242,43 @@ function runTests() {
   });
 }
 
+// Execute Member 1's API collection with the locally installed Newman package.
+function runNewmanTests(collection) {
+  const newman = requirePostman('newman');
+  console.log(`Newman JSON report: ${reportPath}`);
+
+  return new Promise((resolve, reject) => {
+    newman.run(
+      {
+        collection,
+        reporters: ['cli', 'json'],
+        reporter: {
+          json: {
+            export: reportPath,
+          },
+        },
+        ignoreRedirects: true,
+        workingDir: postmanDir,
+      },
+      (error, summary) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        if (!summary || !summary.run) {
+          reject(new Error('Newman completed without a run summary'));
+          return;
+        }
+
+        resolve(
+          summary.run.error || summary.run.failures.length > 0 ? 1 : 0
+        );
+      }
+    );
+  });
+}
+
 // Wait for a child process to terminate.
 async function waitForProcessClose(child, timeoutMs = 5000) {
   if (!child) return true;
@@ -235,12 +363,21 @@ process.on('SIGINT', () => {
 let outcome = 1;
 
 try {
+  if (mode === 'newman') {
+    newmanCollection = prepareNewmanCollection();
+  }
+
   // Prevent connections to an already-running application.
   // This protects the shared MongoDB Atlas database.
-  for (const [port, label] of [
-    [5000, 'backend'],
-    [4000, 'frontend'],
-  ]) {
+  const portsToCheck =
+    mode === 'newman'
+      ? [[5000, 'backend']]
+      : [
+          [5000, 'backend'],
+          [4000, 'frontend'],
+        ];
+
+  for (const [port, label] of portsToCheck) {
     const occupied = await new Promise((resolve) => {
       const socket = net.createConnection({
         host: '127.0.0.1',
@@ -295,40 +432,48 @@ try {
     env
   );
 
-  // FIX: Start Vite directly instead of through npm.
-  // This avoids leaving an npm/Vite child process running.
-  const viteEntry = path.join(
-    clientDir,
-    'node_modules',
-    'vite',
-    'bin',
-    'vite.js'
-  );
+  if (mode !== 'newman') {
+    // Start Vite directly instead of through npm to avoid orphaning its process.
+    const viteEntry = path.join(
+      clientDir,
+      'node_modules',
+      'vite',
+      'bin',
+      'vite.js'
+    );
 
-  frontend = spawnService(
-    process.execPath,
-    [
-      viteEntry,
-      '--host',
-      '127.0.0.1',
-      '--strictPort',
-    ],
-    clientDir,
-    env
-  );
+    frontend = spawnService(
+      process.execPath,
+      [
+        viteEntry,
+        '--host',
+        '127.0.0.1',
+        '--strictPort',
+      ],
+      clientDir,
+      env
+    );
+  }
 
   await waitForHealth();
-  await waitForFrontend();
+  if (mode !== 'newman') {
+    await waitForFrontend();
+  }
 
   if (interrupted) {
     throw new Error('Interrupted before test execution');
   }
 
   console.log(
-    'Temporary MongoDB and both app servers are ready. Executing tests.'
+    mode === 'newman'
+      ? 'Temporary MongoDB and backend are ready. Executing Newman tests.'
+      : 'Temporary MongoDB and both app servers are ready. Executing tests.'
   );
 
-  outcome = await runTests();
+  outcome =
+    mode === 'newman'
+      ? await runNewmanTests(newmanCollection)
+      : await runTests();
 
 } catch (error) {
   console.error(`QA runner failed: ${error.message}`);

@@ -1,11 +1,11 @@
 
-name: EcoCycle QA - Member 3 CI
+name: EcoCycle QA -  Integrated CI
 
 on:
   push:
-    branches: [main, 'qa/**']
+    branches: [main, 'qa/**', develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -55,6 +55,9 @@ jobs:
         run: npm ci
         working-directory: qa/member3/automation
 
+      - name: Install Member 1 Newman dependencies
+        run: npm ci --prefix qa/member1/postman
+
       - name: Verify Firefox and Geckodriver
         run: |
           firefox --version
@@ -78,6 +81,12 @@ jobs:
           npm run bdd --prefix qa/member3/automation \
             2>&1 | tee qa/member3/evidence/ci-bdd.log
 
+      - name: Run Newman API tests
+        run: |
+          set -o pipefail
+          node qa/member3/automation/scripts/isolated-runner.mjs newman \
+            2>&1 | tee "$RUNNER_TEMP/ci-newman.log"
+
       - name: Upload CI test evidence
         if: always()
         uses: actions/upload-artifact@v7
@@ -87,5 +96,14 @@ jobs:
             qa/member3/evidence/ci-ui.log
             qa/member3/evidence/ci-bdd.log
             qa/member3/evidence/artifacts/*.png
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Newman CI log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ecocycle-member1-newman-ci-log
+          path: ${{ runner.temp }}/ci-newman.log
           if-no-files-found: warn
           retention-days: 14
