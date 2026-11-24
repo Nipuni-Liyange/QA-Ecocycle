@@ -1,0 +1,1108 @@
+{
+  "info": {
+    "name": "EcoCycle Functional API (Member 1)",
+    "description": "Member 1 functional API checks. Run against a LOCAL/TEST backend only. See qa/member1/README.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:5000"
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "pickupId",
+      "value": ""
+    },
+    {
+      "key": "pickupVersion",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Unique per-run test data so repeated runs never collide with earlier accounts.",
+          "if (!pm.collectionVariables.get('runId')) {",
+          "  const runId = Date.now().toString(36);",
+          "  pm.collectionVariables.set('runId', runId);",
+          "  pm.collectionVariables.set('userEmail', 'm1.qa.' + runId + '@example.test');",
+          "  pm.collectionVariables.set('collectorEmail', 'm1.qa.collector.' + runId + '@example.test');",
+          "}",
+          "// Backend validates preferredDate in Asia/Colombo (UTC+05:30): use today + 7 days.",
+          "const colombo = new Date(Date.now() + 5.5 * 3600 * 1000);",
+          "pm.collectionVariables.set('futureDate', new Date(colombo.getTime() + 7 * 86400000).toISOString().slice(0, 10));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "A - Register / login (check 1)",
+      "description": "Registration success, invalid-login rejection, login success. Cookie jar keeps the session cookie; csrfToken comes from the JSON body.",
+      "item": [
+        {
+          "name": "A1 Register valid General User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"QA Test User\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"TestPassword123!\",\n  \"role\": \"user\",\n  \"phone\": \"0771234567\",\n  \"district\": \"Colombo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('A1 status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('A1 body has 64-hex csrfToken and public user without password data', () => {",
+                  "  pm.expect(body.csrfToken).to.match(/^[a-f0-9]{64}$/);",
+                  "  pm.expect(body.user.email).to.eql(pm.collectionVariables.get('userEmail'));",
+                  "  pm.expect(body.user.role).to.eql('user');",
+                  "  pm.expect(body.user).to.not.have.property('passwordHash');",
+                  "  pm.expect(body.user).to.not.have.property('password');",
+                  "});",
+                  "pm.test('A1 session cookie is issued (HttpOnly)', () => {",
+                  "  const cookie = String(pm.response.headers.get('Set-Cookie') || '');",
+                  "  pm.expect(cookie).to.include('ecocycle_session=');",
+                  "  pm.expect(cookie.toLowerCase()).to.include('httponly');",
+                  "});",
+                  "pm.collectionVariables.set('csrfToken', body.csrfToken);",
+                  "pm.collectionVariables.set('userId', body.user._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A2 Login with wrong password is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"WrongPassword999!\",\n  \"role\": \"user\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('A2 status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('A2 generic message and no new session data', () => {",
+                  "  pm.expect(body.message).to.eql('Email or password is incorrect.');",
+                  "  pm.expect(body).to.not.have.property('csrfToken');",
+                  "  pm.expect(body).to.not.have.property('user');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A3 Login with correct password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"TestPassword123!\",\n  \"role\": \"user\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('A3 status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('A3 returns the same user and a fresh csrfToken', () => {",
+                  "  pm.expect(body.user._id).to.eql(pm.collectionVariables.get('userId'));",
+                  "  pm.expect(body.csrfToken).to.match(/^[a-f0-9]{64}$/);",
+                  "  pm.expect(body.csrfToken).to.not.eql(pm.collectionVariables.get('csrfToken'));",
+                  "});",
+                  "pm.collectionVariables.set('csrfToken', body.csrfToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "B - Create pickup and verify (check 2)",
+      "description": "Create a valid pickup, then verify ID, status, owner and presence in the owner list.",
+      "item": [
+        {
+          "name": "B1 Create valid pickup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"laptops\",\n  \"itemName\": \"QA test laptop\",\n  \"quantity\": 2,\n  \"condition\": \"needs-repair\",\n  \"description\": \"Synthetic test data only\",\n  \"district\": \"Colombo\",\n  \"city\": \"Colombo\",\n  \"address\": \"12 QA Test Road\",\n  \"preferredDate\": \"{{futureDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('B1 status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('B1 request has _id, pending status, owner and version 0', () => {",
+                  "  const r = body.request;",
+                  "  pm.expect(r._id).to.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(r.status).to.eql('pending');",
+                  "  pm.expect(r.user).to.eql(pm.collectionVariables.get('userId'));",
+                  "  pm.expect(r.collector).to.eql(null);",
+                  "  pm.expect(r.quantity).to.eql(2);",
+                  "  pm.expect(r.__v).to.eql(0);",
+                  "  pm.expect(r.timeline[0].status).to.eql('pending');",
+                  "});",
+                  "pm.collectionVariables.set('pickupId', body.request._id);",
+                  "pm.collectionVariables.set('pickupVersion', body.request.__v);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B2 Owner list contains the new pickup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups?scope=mine&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups"
+              ],
+              "query": [
+                {
+                  "key": "scope",
+                  "value": "mine"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const id = pm.collectionVariables.get('pickupId');",
+                  "pm.test('B2 status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('B2 list contains the created pickup exactly once with status pending', () => {",
+                  "  const matches = body.requests.filter(r => r._id === id);",
+                  "  pm.expect(matches).to.have.lengthOf(1);",
+                  "  pm.expect(matches[0].status).to.eql('pending');",
+                  "  pm.expect(body.total).to.be.at.least(1);",
+                  "});",
+                  "pm.collectionVariables.set('totalBefore', body.total);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B3 Get pickup by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups/{{pickupId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups",
+                "{{pickupId}}"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('B3 status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('B3 returned request matches the created one', () => {",
+                  "  pm.expect(body.request._id).to.eql(pm.collectionVariables.get('pickupId'));",
+                  "  pm.expect(body.request.itemName).to.eql('QA test laptop');",
+                  "  pm.expect(body.request.address).to.eql('12 QA Test Road');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "C - Quantity boundaries (check 3)",
+      "description": "Quantity 0 and 1000 are rejected with 422 and create nothing.",
+      "item": [
+        {
+          "name": "C1 Quantity 0 rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"laptops\",\n  \"itemName\": \"QA test laptop\",\n  \"quantity\": 0,\n  \"condition\": \"needs-repair\",\n  \"description\": \"Synthetic test data only\",\n  \"district\": \"Colombo\",\n  \"city\": \"Colombo\",\n  \"address\": \"12 QA Test Road\",\n  \"preferredDate\": \"{{futureDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('C1 status is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('C1 quantity field error is reported', () => {",
+                  "  pm.expect(body.message).to.include('Quantity must be a whole number from 1 to 999');",
+                  "  pm.expect(body.fields).to.have.property('quantity');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "C2 Quantity 1000 rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"laptops\",\n  \"itemName\": \"QA test laptop\",\n  \"quantity\": 1000,\n  \"condition\": \"needs-repair\",\n  \"description\": \"Synthetic test data only\",\n  \"district\": \"Colombo\",\n  \"city\": \"Colombo\",\n  \"address\": \"12 QA Test Road\",\n  \"preferredDate\": \"{{futureDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('C2 status is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('C2 quantity field error is reported', () => pm.expect(body.fields).to.have.property('quantity'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "C3 Rejected requests created nothing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups?scope=mine&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups"
+              ],
+              "query": [
+                {
+                  "key": "scope",
+                  "value": "mine"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('C3 owner total is unchanged by the rejected requests', () => {",
+                  "  pm.expect(body.total).to.eql(Number(pm.collectionVariables.get('totalBefore')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "D - Update pending pickup (check 4)",
+      "description": "Update with the current __v as version; verify the changed field and version increment; stale version is rejected.",
+      "item": [
+        {
+          "name": "D1 Update pending pickup with current version",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"laptops\",\n  \"itemName\": \"QA test laptop (edited)\",\n  \"quantity\": 2,\n  \"condition\": \"needs-repair\",\n  \"description\": \"Synthetic test data only\",\n  \"district\": \"Colombo\",\n  \"city\": \"Colombo\",\n  \"address\": \"12 QA Test Road\",\n  \"preferredDate\": \"{{futureDate}}\",\n  \"version\": {{pickupVersion}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups/{{pickupId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups",
+                "{{pickupId}}"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const oldVersion = Number(pm.collectionVariables.get('pickupVersion'));",
+                  "pm.test('D1 status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('D1 itemName changed, still pending, version incremented', () => {",
+                  "  pm.expect(body.request.itemName).to.eql('QA test laptop (edited)');",
+                  "  pm.expect(body.request.status).to.eql('pending');",
+                  "  pm.expect(body.request.__v).to.eql(oldVersion + 1);",
+                  "});",
+                  "pm.collectionVariables.set('staleVersion', oldVersion);",
+                  "pm.collectionVariables.set('pickupVersion', body.request.__v);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D2 Update with stale version is rejected",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"laptops\",\n  \"itemName\": \"Should not be saved\",\n  \"quantity\": 2,\n  \"condition\": \"needs-repair\",\n  \"description\": \"Synthetic test data only\",\n  \"district\": \"Colombo\",\n  \"city\": \"Colombo\",\n  \"address\": \"12 QA Test Road\",\n  \"preferredDate\": \"{{futureDate}}\",\n  \"version\": {{staleVersion}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups/{{pickupId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups",
+                "{{pickupId}}"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('D2 status is 409', () => pm.response.to.have.status(409));",
+                  "pm.test('D2 message asks the user to refresh', () => pm.expect(body.message).to.include('Refresh'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D3 Change persisted and stale edit not applied",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups/{{pickupId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups",
+                "{{pickupId}}"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('D3 persisted itemName is the D1 value', () => pm.expect(body.request.itemName).to.eql('QA test laptop (edited)'));",
+                  "pm.test('D3 persisted version matches D1 response', () => pm.expect(body.request.__v).to.eql(Number(pm.collectionVariables.get('pickupVersion'))));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "E - Delete own pending pickup (check 5)",
+      "description": "DELETE needs a JSON body ({}) because the API requires application/json on all writes.",
+      "item": [
+        {
+          "name": "E1 Delete own pending pickup",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups/{{pickupId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups",
+                "{{pickupId}}"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('E1 status is 204', () => pm.response.to.have.status(204));",
+                  "pm.test('E1 response body is empty', () => pm.expect(pm.response.text()).to.eql(''));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E2 Deleted pickup returns 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups/{{pickupId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups",
+                "{{pickupId}}"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('E2 status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('E2 message is Pickup request not found.', () => pm.expect(pm.response.json().message).to.eql('Pickup request not found.'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E3 Owner list no longer contains the pickup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups?scope=mine&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups"
+              ],
+              "query": [
+                {
+                  "key": "scope",
+                  "value": "mine"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('E3 pickup ID is absent from the list', () => pm.expect(body.requests.map(r => r._id)).to.not.include(pm.collectionVariables.get('pickupId')));",
+                  "pm.test('E3 total decreased by one versus the pre-delete total', () => pm.expect(body.total).to.eql(Number(pm.collectionVariables.get('totalBefore')) - 1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "F - Authorization and session (check 6, optional)",
+      "description": "Missing CSRF, logout, role enforcement (collector cannot create; user cannot use collector-only accept).",
+      "item": [
+        {
+          "name": "F1 Create pickup without CSRF header is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"laptops\",\n  \"itemName\": \"QA test laptop\",\n  \"quantity\": 2,\n  \"condition\": \"needs-repair\",\n  \"description\": \"Synthetic test data only\",\n  \"district\": \"Colombo\",\n  \"city\": \"Colombo\",\n  \"address\": \"12 QA Test Road\",\n  \"preferredDate\": \"{{futureDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('F1 status is 403', () => pm.response.to.have.status(403));",
+                  "pm.test('F1 CSRF message returned', () => pm.expect(pm.response.json().message).to.include('security token'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F2 User cannot use collector-only accept",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups/{{pickupId}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups",
+                "{{pickupId}}",
+                "accept"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('F2 status is 403', () => pm.response.to.have.status(403));",
+                  "pm.test('F2 role message returned', () => pm.expect(pm.response.json().message).to.include('not available for your account role'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F3 Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('F3 status is 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F4 Protected route after logout returns 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('F4 status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('F4 login prompt returned', () => pm.expect(pm.response.json().message).to.include('log in'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F5 Register collector",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"QA Test Collector\",\n  \"email\": \"{{collectorEmail}}\",\n  \"password\": \"TestPassword123!\",\n  \"role\": \"collector\",\n  \"phone\": \"0779876543\",\n  \"district\": \"Colombo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('F5 status is 201 and role is collector', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(body.user.role).to.eql('collector');",
+                  "});",
+                  "pm.collectionVariables.set('csrfToken', body.csrfToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F6 Collector cannot create a pickup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"laptops\",\n  \"itemName\": \"QA test laptop\",\n  \"quantity\": 2,\n  \"condition\": \"needs-repair\",\n  \"description\": \"Synthetic test data only\",\n  \"district\": \"Colombo\",\n  \"city\": \"Colombo\",\n  \"address\": \"12 QA Test Road\",\n  \"preferredDate\": \"{{futureDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pickups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pickups"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('F6 status is 403', () => pm.response.to.have.status(403));",
+                  "pm.test('F6 role message returned', () => pm.expect(pm.response.json().message).to.include('not available for your account role'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F7 Collector logout (cleanup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('F7 status is 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

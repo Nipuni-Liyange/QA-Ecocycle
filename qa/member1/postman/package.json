@@ -1,0 +1,11 @@
+{
+  "name": "ecocycle-m1-api-tests",
+  "private": true,
+  "description": "Member 1 Newman runner for the EcoCycle functional API collection",
+  "scripts": {
+    "test": "newman run EcoCycle-Functional.postman_collection.json --reporters cli,json --reporter-json-export ../evidence/newman-report.json"
+  },
+  "devDependencies": {
+    "newman": "^6.2.1"
+  }
+}
