@@ -1,11 +1,11 @@
 # EcoCycle – Security Testing Checklist
 
 **Project:** EcoCycle  
-**QA Responsibility: Performance, Security, Usability and Defect Tracking  
+**QA Responsibility:** Performance, Security, Usability and Defect Tracking
 **Environment:** Local development environment  
 **Backend:** Express.js  
 **Database:** MongoDB Atlas  
-**Testing Date:** 23 November 2026
+**Testing Date:** 23–24 November 2026
 
 ## 1. Objective
 
@@ -161,57 +161,201 @@ All tests were performed against the local development application using test ac
 
 **Status:** PASS
 
-## 4. Summary of Results
+### SEC-10 – Cross-user Pickup Information Protection
 
-| Metric | Count |
-|---|---:|
-| Total security tests | 9 |
-| Passed | 9 |
-| Failed | 0 |
-| Not tested | Recorded separately below |
+**Objective:** Verify that an authenticated user cannot retrieve another user's pickup by requesting its pickup ID.
 
-The nine checks performed during this test session passed their stated expected outcomes.
+**Procedure:**
+1. Log in as a test user.
+2. Request a pickup ID belonging to another user.
+3. Observe the API response.
 
-## 5. Evidence
+**Expected Result:** The backend should not disclose the other user's pickup.
 
-The following evidence was captured during testing:
+**Actual Result:** HTTP 404 Not Found. The response stated `Pickup request not found.` and did not disclose pickup details.
 
-| Evidence ID | Description |
+**Status:** PASS
+
+### SEC-11 – Session Protection After Logout
+
+**Objective:** Verify that a retained or reused session cannot access protected endpoints after logout.
+
+**Procedure:**
+1. Log in to a test account.
+2. Log out and delete the application session.
+3. Reuse the previous session/cookie to request `/api/auth/me`.
+
+**Expected Result:** The backend should reject the old session with HTTP 401.
+
+**Actual Result:** HTTP 401 Unauthorized. The response stated `Please log in to continue.`
+
+**Status:** PASS
+
+### SEC-12 – Missing CSRF Token
+
+**Objective:** Verify that a state-changing request is rejected when the CSRF token is absent.
+
+**Procedure:**
+1. Log in to an authenticated account.
+2. Send a pickup write request without the `X-CSRF-Token` header.
+3. Observe the response.
+
+**Expected Result:** The backend should reject the request with HTTP 403.
+
+**Actual Result:** HTTP 403 Forbidden with the invalid security token response.
+
+**Status:** PASS
+
+### SEC-13 – Invalid CSRF Token
+
+**Objective:** Verify that a state-changing request is rejected when an incorrect CSRF token is supplied.
+
+**Procedure:**
+1. Log in to an authenticated account.
+2. Send a pickup write request using an invalid `X-CSRF-Token` value.
+3. Observe the response.
+
+**Expected Result:** The backend should reject the request with HTTP 403.
+
+**Actual Result:** HTTP 403 Forbidden. The request was not processed.
+
+**Status:** PASS
+
+### SEC-14 – Unauthorized Collector Pickup Modification
+
+**Objective:** Verify that a collector cannot use user-only pickup modification operations.
+
+**Procedure:**
+1. Log in as QA Test Collector.
+2. Attempt to update or delete a pickup through a user-only endpoint.
+3. Observe the response.
+
+**Expected Result:** The backend should reject the collector's unauthorized modification with HTTP 403.
+
+**Actual Result:** HTTP 403 Forbidden. Collector access was limited to collector-authorized operations.
+
+**Status:** PASS
+
+### SEC-15 – Injection-style Search Input
+
+**Objective:** Verify that search input containing injection-style regular-expression characters is handled safely.
+
+**Procedure:**
+1. Log in to the application.
+2. Enter basic injection-style text containing regular-expression special characters in the pickup search field.
+3. Observe the search response.
+
+**Expected Result:** The search should remain operational and not execute as unintended regular-expression logic.
+
+**Actual Result:** The search input was treated as literal text and did not cause an injection or application error.
+
+**Status:** PASS
+
+**Source finding:** The backend escapes regular-expression metacharacters before constructing the MongoDB search expression.
+
+### SEC-16 – Photo Size Limit
+
+**Objective:** Verify that photo uploads larger than 2 MB are rejected.
+
+**Procedure:**
+1. Select a valid image larger than 2 MB.
+2. Create or update a pickup using the photo.
+3. Observe the upload result.
+
+**Expected Result:** The application should reject the oversized photo.
+
+**Actual Result:** The photo was rejected before pickup submission with the photo-size validation message.
+
+**Status:** PASS
+
+### SEC-17 – Photo Dimension Limit
+
+**Objective:** Verify that images exceeding 24 megapixels are rejected.
+
+**Procedure:**
+1. Prepare a valid JPEG containing approximately 25 megapixels.
+2. Upload it as a pickup photo.
+3. Observe the response.
+
+**Expected Result:** The backend should reject an image exceeding the configured 24-megapixel limit.
+
+**Actual Result:** The image was rejected with `This photo could not be processed. Use an undamaged JPG, PNG or WebP image up to 2 MB and 24 megapixels.`
+
+**Status:** PASS
+
+**Evidence:** [`image-dimension-limit.txt`](./evidence/image-dimension-limit.txt)
+
+### SEC-18 – Cross-user Photo ID Reuse Protection
+
+**Objective:** Verify that one user cannot reuse a photo ID belonging to another user's pickup request.
+
+**Procedure:**
+1. Create a pickup with a photo as QA Test User (User A).
+2. Log in as a different account, QA Test User B.
+3. Obtain the existing photo ID belonging to User A's pickup.
+4. Attempt to create or update a pickup using that foreign photo ID.
+5. Observe the response.
+
+**Expected Result:** The foreign photo ID should be rejected and the pickup should not be submitted.
+
+**Actual Result:** HTTP 422 Unprocessable Entity. The submitted photo was not accepted because it did not belong to the current request.
+
+**Status:** PASS
+
+**Evidence:** [`23-sec-18-cross-user-photo-ownership.png`](./evidence/screenshots/23-sec-18-cross-user-photo-ownership.png)
+
+### Additional Security Checks – Session Management and Rate Limiting
+
+#### SEC-19 – Session Lifetime Configuration
+
+**Status:** PASS – Source Code Review
+
+The application configures a session lifetime of seven days. The cookie uses the same maximum age, and the session document stores an `expiresAt` timestamp.
+
+**Relevant source:** [`auth.js`](../../../server/src/auth.js) and [`models.js`](../../../server/src/models.js)
+
+#### SEC-20 – Expired Session Rejection
+
+**Status:** PASS – Source Code Review
+
+The authentication middleware checks whether the session expiry timestamp is later than the current time. Expired sessions are rejected with HTTP 401.
+
+**Relevant source:** [`auth.js`](../../../server/src/auth.js)
+
+#### SEC-21 – Automatic Session Cleanup
+
+**Status:** PASS – Source Code Review
+
+The MongoDB Session schema defines `expiresAt` with `expires: 0`, configuring a TTL index to automatically remove expired session records. MongoDB performs this cleanup in the background.
+
+**Relevant source:** [`models.js`](../../../server/src/models.js)
+
+### Rate-Limiting Configuration Review
+
+The application configures:
+- General API requests: 240 requests per minute.
+- Login and registration: 30 attempts per 15 minutes.
+
+The rate-limiting configuration and middleware placement were reviewed in the source code. Runtime enforcement was not tested because repeated failed authentication attempts could temporarily restrict access from the testing IP.
+
+**Relevant source:** [`app.js`](../../../server/src/app.js)
+
+## 4. Evidence Index
+
+| Evidence | Coverage |
 |---|---|
-| SEC-E01 | Unauthenticated `/api/auth/me` response – HTTP 401 |
-| SEC-E02 | Collector role modification rejected – HTTP 422 |
-| SEC-E03 | Pickup API response showing private fields were omitted |
-| SEC-E04 | Protected endpoint rejected access after logout – HTTP 401 |
-| SEC-E05 | Negative quantity rejected – HTTP 422 |
-| SEC-E06 | String quantity rejected – HTTP 422 |
-| SEC-E07 | Unsupported photo upload rejected – HTTP 422 |
-| SEC-E08 | Authenticated collector photo access – HTTP 200 |
-| SEC-E09 | Unauthenticated photo access rejected – HTTP 401 |
+| [`unauthenticated-access.txt`](./evidence/unauthenticated-access.txt) | SEC-01 |
+| [`collector-role-protection.txt`](./evidence/collector-role-protection.txt) | SEC-02 |
+| [`pickup-privacy.txt`](./evidence/pickup-privacy.txt) | SEC-03 |
+| [`logout-session-protection.txt`](./evidence/logout-session-protection.txt) | SEC-04 and SEC-11 |
+| [`negative-quantity-validation.txt`](./evidence/negative-quantity-validation.txt) | SEC-05 |
+| [`invalid-quantity-type.txt`](./evidence/invalid-quantity-type.txt) | SEC-06 |
+| [`invalid-photo-upload.txt`](./evidence/invalid-photo-upload.txt) | SEC-07 |
+| [`unauthenticated-photo-access.txt`](./evidence/unauthenticated-photo-access.txt) | SEC-09 |
+| [`image-dimension-limit.txt`](./evidence/image-dimension-limit.txt) | SEC-17 |
+| [`23-sec-18-cross-user-photo-ownership.png`](./evidence/screenshots/23-sec-18-cross-user-photo-ownership.png) | SEC-18 |
+| [`screenshots/`](./evidence/screenshots/) | Additional supporting screenshots |
 
-Screenshots and response captures should be retained as supporting evidence alongside this report.
+## 5. Testing Limitations
 
-## 6. Limitations and Further Testing
-
-The following security checks were not completed during this test session:
-
-- Expired session behaviour.
-- Cross-user access to another user's pickup through direct ID manipulation.
-- Collector attempts to edit a general user's account or pickup.
-- Injection and unsafe search input testing.
-- CSRF protection testing with missing or invalid tokens.
-- Upload size and image dimension limits.
-- Attempts to reuse another pickup's photo ID.
-- Rate-limiting behaviour under repeated authentication attempts.
-
-These areas require additional testing before making broader conclusions about application security.
-
-## 7. Conclusion
-
-The tested EcoCycle security controls behaved as expected in the local development environment.
-
-The backend rejected unauthenticated access, prevented collector role modification, protected private pickup information, invalidated access after logout, rejected invalid quantity values and blocked unsupported photo uploads.
-
-Photo access was available to authenticated collectors viewing pending requests, while unauthenticated photo access was rejected.
-
-Further testing is required to assess the remaining security areas listed above.
-
+Session expiry rejection and TTL cleanup behavior were confirmed by source-code review; the seven-day expiry period was not allowed to elapse and TTL deletion was not observed at runtime. Rate-limit configuration was confirmed in source code, but runtime rate-limit enforcement was not tested.

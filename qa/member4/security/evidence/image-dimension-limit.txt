@@ -1,0 +1,15 @@
+SEC-17 – Image Dimension Validation
+
+**Test input:** 5,000 × 5,000 pixel JPEG (25 million pixels), below 2 MB.
+
+**Expected result:** The application rejects images exceeding 24 million pixels.
+
+**Actual result:** The application displayed the validation message:
+
+"This photo could not be processed. Use an undamaged JPG, PNG or WebP image up to 2 MB and 24 megapixels."
+
+**HTTP/UI result:** Image rejected; pickup was not submitted.
+
+**Status:** PASS
+
+**Conclusion:** The application enforces the maximum image dimension limit.

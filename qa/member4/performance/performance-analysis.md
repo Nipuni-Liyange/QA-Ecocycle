@@ -18,7 +18,7 @@ This report presents the performance testing results for the EcoCycle web applic
 | Database | MongoDB Atlas |
 | Test Endpoint | GET /api/health |
 
-The tests were executed against the locally running backend. The application uses MongoDB Atlas as its database.
+The API process was local, but its configured database was MongoDB Atlas rather than an isolated local test database. The `/api/health` handler reports the Mongoose connection state; these tests did not exercise pickup queries or measure database query performance. This is a testing-environment deviation from the recommended isolated local setup.
 
 ## 3. Test Scenarios
 
@@ -87,6 +87,8 @@ A Constant Timer of 3000 milliseconds was used to introduce a delay between requ
 
 **Observation:** All 93 requests completed successfully with HTTP 200 responses. The P95 response time was 5 ms, meaning 95% of the recorded requests completed within approximately 5 ms.
 
+The archived JTL contains all 93 samples. Measuring from the first request timestamp to the last sample's completion gives 56.145 seconds and approximately 1.656 requests/second, which rounds to the reported 1.7 requests/second.
+
 ## 5. Comparison of Results
 
 | Metric | 1 User | 3 Users | 5 Users |
@@ -109,7 +111,7 @@ As the number of virtual users increased, the total number of completed requests
 
 The 5-user test recorded 93 successful requests with no failures. Its P95 response time was 5 ms, indicating consistently short response times for the tested requests.
 
-However, these results represent only the `/api/health` endpoint. They do not establish the performance of the entire EcoCycle application, other API endpoints, or actual database query performance.
+However, these results represent only the `/api/health` endpoint. That handler reports connection state without measuring database queries. The results do not establish the performance of the entire EcoCycle application, other API endpoints, or actual database query performance.
 
 ## 7. Limitations
 
@@ -121,9 +123,11 @@ However, these results represent only the `/api/health` endpoint. They do not es
 - Browser performance and frontend loading time were not measured.
 - A Git commit identifier and browser version were not recorded for this test run.
 - HTTP 429 responses were not separately verified for the baseline and 3-user tests.
+- The API process was connected to MongoDB Atlas, rather than an isolated local test database. This is a testing-environment deviation. Do not replay load scenarios against the shared Atlas configuration; use the local test database for any future rerun.
+- The 5-user JTL result is archived. Raw JTL files for the baseline and 3-user summaries are not present in the current performance evidence folder.
 
 ## 8. Conclusion
 
-The performance tests showed that the EcoCycle backend health endpoint handled the tested workloads of one, three, and five virtual users with low average response times and no reported request failures.
+The performance tests recorded no reported request failures for the tested workloads of one, three, and five virtual users. In the archived 5-user run, all 93 requests returned HTTP 200; average response time was 2.69 ms, median was 2 ms, P95 was 5 ms, maximum was 25 ms, and throughput was approximately 1.7 requests/second.
 
-The 5-user test achieved a P95 response time of 5 ms, with all
+These findings apply only to the local API's `/api/health` endpoint. Because the API used MongoDB Atlas instead of an isolated local database, the environment deviated from the recommended test setup. Do not treat these results as a measurement of database query performance, whole-application capacity, or production performance.
