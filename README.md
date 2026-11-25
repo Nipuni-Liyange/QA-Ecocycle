@@ -25,6 +25,7 @@ can be stored on any drive or in any parent folder.
 ## Install dependencies
 
 ```sh
+npm ci
 npm --prefix server ci
 npm --prefix client ci
 ```
@@ -40,21 +41,15 @@ Atlas and local mode use separate databases, accounts, and pickup records.
 
 ## Run the application
 
-Open two terminals, each starting at the repository root.
-
-Backend terminal:
+From the repository root, start both the backend and frontend together:
 
 ```sh
-npm --prefix server run dev
+npm run dev
 ```
 
-Frontend terminal:
-
-```sh
-npm --prefix client run dev
-```
-
-Wait for the backend to report a successful MongoDB connection and startup.
+The frontend starts after the backend health endpoint confirms MongoDB is
+connected (up to 120 seconds). Use Ctrl+C to stop both services. To run only
+the backend, use `npm run dev:server`.
 The default API address is `http://127.0.0.1:5000` and the frontend is
 [EcoCycle](http://127.0.0.1:4000). Use the actual configured port if overridden.
 

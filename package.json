@@ -1,0 +1,11 @@
+{
+  "name": "ecocycle",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others --names backend,frontend \"npm --prefix server run dev\" \"node scripts/wait-for-backend.js && npm --prefix client run dev\"",
+    "dev:server": "npm --prefix server run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  }
+}
