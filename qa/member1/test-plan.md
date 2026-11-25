@@ -5,7 +5,7 @@
 | Course | EC4206 Software Testing & Quality Assurance, University of Ruhuna |
 | Author | Member 1 — branch `qa/functional-api` |
 | Application | EcoCycle (React/Vite client `127.0.0.1:4000`, Express API `127.0.0.1:5000`, MongoDB/Mongoose) |
-| Baseline commit | `<git rev-parse --short HEAD>` ← fill in |
+| Baseline commit | `260b6a9` (execution baseline recorded in `execution-summary.md`) |
 | Plan date / version | 2026-11-23 / v1.0 |
 
 ## 1. Objective

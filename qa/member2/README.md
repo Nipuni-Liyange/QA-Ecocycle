@@ -103,6 +103,7 @@ The wider source scan reported 16.9% overall coverage; see
 - Use the environment configuration, tool installation, and authorized test data
   appropriate to the current machine.
 - The selected validation suite and scan have recorded execution evidence.
-- A successful full integration run, frontend lint/build, and shared CI are not
-  established by the selected-suite transcript alone.
-- The final handoff identifies the remaining shared defect-log and review items.
+- The consolidated report records the full local backend test run, frontend
+  lint/build, and successful integrated `develop` GitHub Actions run.
+- Team-wide defect tracking and the integration status are summarized in
+  [`../final-report.md`](../final-report.md).

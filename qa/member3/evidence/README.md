@@ -43,13 +43,22 @@ Screenshots:
 - M3-CI01-Workflow-Success.png
 - M3-CI02-All-Steps-Passed.png
 
-Verified successful workflow:
+These saved screenshots document run #3 on the automation branch. The latest
+run on that branch is [#4](https://github.com/Nipuni-Liyange/QA-Ecocycle/actions/runs/45191371663),
+which succeeded on `qa/automation-cicd` head
+`3ac773ad9a6c5db46c832becc15c2bc46468dfc3`. That head was integrated by merge
+commit `af772857`. The latest integrated `develop` run is #5:
+
 https://github.com/Nipuni-Liyange/QA-Ecocycle/actions/runs/45181306599
 
 Commit: e234a41
 Branch: qa/automation-cicd
 Run number: 3
 Status: SUCCESS
+
+Latest integrated run: [#5](https://github.com/Nipuni-Liyange/QA-Ecocycle/actions/runs/45433160572)
+on `develop`, commit `a50a1bb59229efd398647a7a2a7bf654ca2fc70e`, status SUCCESS.
+Its logs and generated test screenshots are available in the Actions artifacts.
 
 ## Downloadable CI Artifact
 

@@ -34,11 +34,13 @@ See `qa/member2/README.md`, `qa/member2/final-handoff.md`, and
 
 ## Limits and team follow-up
 
-- The broader integration suite, frontend lint/build, shared CI, and quality-gate
-  status are not established by the selected unit-test and scanner-success results.
-- Confirmed functional-defect density remains pending the team's deduplicated
-  defect-log count and agreed reporting scope. The known code size is 2.410 KLOC.
-- The coordinator should confirm the issue ID for the already-fixed phone finding
-  from `final-handoff.md`, reusing an existing issue if present.
+- The consolidated report verifies the integrated `develop` GitHub Actions run,
+  local backend suite, frontend lint, and frontend build. The SonarQube quality
+  gate was not recorded as a separate result.
+- The consolidated report records one confirmed defect from the reviewed member
+  evidence, giving a provisional density of 0.415 defects/KLOC against 2.410 KLOC.
+  Revise the numerator if additional genuine defects are confirmed.
+- DEF-001 is tracked in the local defect register; no GitHub Issue exists.
 - The SonarQube improvements are proposals; their implementation is not claimed here.
-- Teammate review and the agreed integration checks are required before merging.
+- The SonarQube metrics are from revision `a63ed6f`; rerun on the integrated
+  revision when the SonarQube service is available.

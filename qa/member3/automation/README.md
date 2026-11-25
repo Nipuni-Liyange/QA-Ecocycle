@@ -104,8 +104,8 @@ Workflow file:
     .github/workflows/qa-tests.yml
 
 The workflow automatically runs on:
-- Pushes to main and qa/** branches
-- Pull requests targeting main
+- Pushes to `main`, `develop`, and `qa/**` branches
+- Pull requests targeting `main` or `develop`
 
 It can also be triggered manually.
 
@@ -127,16 +127,26 @@ headless Firefox and isolated MongoDB.
 
 ### 10. Verified CI Execution
 
-Date: 23 November 2026
+Date: 24 November 2026
 
-Branch: qa/automation-cicd
-Commit: e234a41
-Workflow run: #3
+Branch: `develop`
+Commit: `a50a1bb59229efd398647a7a2a7bf654ca2fc70e`
+Workflow run: [#5](https://github.com/Nipuni-Liyange/QA-Ecocycle/actions/runs/45433160572)
 Status: SUCCESS
-Total duration: 2 minutes 9 seconds
+Total duration: 1 minute 58 seconds
 
-Successful workflow:
-https://github.com/Nipuni-Liyange/QA-Ecocycle/actions/runs/45181306599
+The run completed all steps, including backend tests, frontend lint/build,
+Selenium UI, Cucumber BDD, Newman API tests, and evidence uploads. The current
+local `develop` HEAD matches this commit.
+
+The latest run on `qa/automation-cicd` was [#4](https://github.com/Nipuni-Liyange/QA-Ecocycle/actions/runs/45191371663):
+it passed all Member 3 CI steps on branch head
+`3ac773ad9a6c5db46c832becc15c2bc46468dfc3`. That head is included in
+`develop` merge commit `af772857`.
+
+The separately saved `M3-CI01` and `M3-CI02` workflow screenshots are from
+run #3 on `qa/automation-cicd`; runs #4 and #5 are evidenced by their Actions
+pages and uploaded artifacts.
 
 ### 11. Test Evidence
 
@@ -153,6 +163,10 @@ Evidence includes:
 GitHub Actions also uploads a downloadable artifact
 named `ecocycle-member3-ci-evidence`, containing
 CI execution logs and generated screenshots.
+
+The passing pipeline screenshots are
+`M3-CI01-Workflow-Success.png` and
+`M3-CI02-All-Steps-Passed.png`.
 
 ### 12. Troubleshooting
 

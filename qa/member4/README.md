@@ -62,17 +62,22 @@ Do not copy session cookies, CSRF tokens, real addresses, or private account dat
 
 The usability report documents ten Chrome DevTools responsive-emulation checks: mobile at 360×800, tablet at 768×1024, and desktop at 1366×768; registration, pickup creation/editing/tracking; keyboard navigation; required-field feedback; and reduced-motion behavior. These are emulated viewport results, not physical-device or full accessibility-conformance tests. The usability report is the currently listed usability artifact; this folder does not contain a separate usability screenshot set.
 
-## Defect tracking and outstanding confirmation
+## Defect tracking
 
-The recorded performance, security, and usability work found zero confirmed defects. The HTTP 401 observed on a login page was not confirmed as a defect and is recorded as an observation only. Do not invent an issue or root cause to meet the working-plan target.
-
-The working plan asks the team to check the shared issue register and, if a genuine defect exists, retain issue-to-fix-to-retest lifecycle evidence and perform a real root-cause analysis. Team-wide issue confirmation has not been established by these files. Until a teammate confirms the shared status, report the lifecycle/RCA target as unmet rather than claiming that no other team member found a defect. See the defect register and RCA report for the current scoped status.
+Member 4's performance, security, and usability work found zero confirmed
+defects. The consolidated review identified DEF-001 in member 2's TDD evidence:
+profile validation accepted a phone value containing only hyphens. Its fix,
+successful retest, RCA, and New → Assigned → Fixed → Verified → Closed local
+tracker lifecycle are recorded in the
+[defect register](./defect-tracking/defect-register.md) and
+[RCA report](./defect-tracking/root-cause-analysis.md). The login-page HTTP 401
+remains an unconfirmed observation, not a defect. No GitHub Issue was created.
 
 ## Viva preparation
 
 - **Performance:** Explain that the measured endpoint was only `GET /api/health`. The 1-user/30-second run recorded 9 requests, 3 ms average, 18 ms maximum, and 0% errors. The 3-user/60-second run recorded 57 requests, 3 ms average, 66 ms maximum, and 0% errors. The saved 5-user JTL was independently checked: 93 successful samples, 2.69 ms average, 5 ms P95, 25 ms maximum, and 0% errors. These results do not establish whole-application or production capacity. Historical execution used an API configured with Atlas, so do not repeat it against a shared database.
 - **Security demonstration:** Use the two-account SEC-10 procedure above. Show User A's test pickup, request it while signed in as User B, and explain the expected/recorded 404. Keep credentials and session tokens private.
-- **Defects:** Explain that no defect was confirmed in the documented test scope. The login-page 401 was an unconfirmed observation, not a bug. Team-wide status remains unconfirmed, so there is no genuine defect lifecycle or RCA to present; state that requirement as unmet rather than inventing one.
+- **Defects:** Show DEF-001's red test, fix, passing retest, and RCA. Explain that its lifecycle is recorded in the local defect register because no GitHub Issue exists. The login-page 401 remains an unconfirmed observation.
 - **Suggested four-minute flow:** State the assigned scope and risk; show a saved JMeter result or permitted local test; compare expected and observed evidence; close with the Atlas limitation and honest defect/RCA status.
 
 ## Submission status

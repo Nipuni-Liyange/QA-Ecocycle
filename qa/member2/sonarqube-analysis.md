@@ -85,13 +85,11 @@ The code-size denominator includes the analyzed JavaScript and CSS.
 
 ## Defect density
 
-Defect density = unique confirmed defects / 2.410 KLOC.
-
-The confirmed defect count must come from the team's defect log.
-This calculation remains pending until that count is available.
-
-The 9 SonarQube reliability findings are recorded separately as
-static-analysis findings requiring review.
+The reviewed member evidence records one unique confirmed defect (DEF-001).
+Using the analyzed source size of 2.410 KLOC, the provisional confirmed-defect
+density is `1 / 2.410 = 0.415 defects per KLOC`. Revisit the numerator if further
+genuine team defects are confirmed. The 9 SonarQube reliability findings are
+static-analysis findings and are not included in this defect count.
 
 ## Additional evidence
 

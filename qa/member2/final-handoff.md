@@ -43,18 +43,19 @@ For a separately defined static-analysis measure, the reported project reliabili
 finding density is `9 / 2.410 = 3.73 reliability findings per KLOC`.
 This does not establish confirmed functional-defect density.
 
-Confirmed defect density uses `D / 2.410 defects per KLOC`, where D is the team's
-deduplicated confirmed defect count for the agreed QA period and source scope,
-including fixed defects found in that period. The team count is still pending.
-The defect-tracking coordinator should supply D, its issue IDs, and the reporting
-period before that metric is finalized. Do not substitute the 9 unreviewed
-static-analysis findings for a confirmed defect-log count.
+Confirmed defect density uses `D / 2.410 defects per KLOC`, where D is the
+deduplicated confirmed defect count for the reviewed QA period and source scope,
+including fixed defects found in that period. The consolidated review records
+one confirmed defect (DEF-001), giving a provisional density of `1 / 2.410 =
+0.415 defects per KLOC`. Keep this distinct from the 9 SonarQube reliability
+findings. Revisit the count if additional team issues are confirmed.
 
 ## Historical phone-validation finding for the defect log
 
 - Title: Profile validation accepts a provided phone containing no digits.
-- Status in this contribution: fixed and verified by the selected TDD suite;
-  GitHub issue ID / lifecycle record still needs confirmation with the coordinator.
+- Status: fixed and verified by the selected TDD suite; tracked as DEF-001 in the
+  local QA defect register with the New → Assigned → Fixed → Verified → Closed
+  transitions recorded. No GitHub Issue was created.
 - TDD rule adopted for this work: a provided optional phone must contain a digit
   as well as satisfying the existing permitted-character/length checks.
 - Original reproduction, from server: call
@@ -70,7 +71,7 @@ static-analysis findings for a confirmed defect-log count.
 Suggested root cause: the original allowed-character expression admitted hyphens
 and other formatting characters without requiring any digit. The fix adds a digit
 predicate, then the refactor names the two checks to make the intent easier to read.
-Have the coordinator reuse an existing issue if this defect is already logged.
+The consolidated defect register is `qa/member4/defect-tracking/defect-register.md`.
 
 ## Three improvement proposals
 
@@ -101,14 +102,17 @@ requests. The shared pipeline should run the agreed checks before integration.
 This contribution has local selected-test and scan evidence; it does not claim
 that shared CI or all application testing has already passed.
 
-## Remaining shared handoff items
+## Consolidated handoff status
 
-- Defect coordinator: confirm the unique defect count, issue IDs, period, and scope.
-- Reviewer: review the pull request and the shared CI result before integration.
-- Report coordinator: combine these results with the other members' testing work.
-- Full database-backed integration, frontend lint/build, and shared CI do not have
-  a verified successful result in this handoff. Earlier setup encountered an
-  interrupted MongoDB binary download; preserve that distinction in the group report.
+- The local defect register records DEF-001 and its completed New → Assigned →
+  Fixed → Verified → Closed lifecycle. Revisit the count if further genuine
+  defects are confirmed.
+- The integrated `develop` GitHub Actions run, local backend suite, frontend
+  lint, and frontend production build are recorded in
+  [`../final-report.md`](../final-report.md).
+- SonarQube metrics remain from revision `a63ed6f`; rerun on the integrated
+  revision when the SonarQube service is available.
+- The consolidated report combines the four members' results and limitations.
 
 ## Short viva demonstration
 
